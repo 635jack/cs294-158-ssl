@@ -12,7 +12,7 @@ from torchvision import transforms
 def get_transform(dataset, task, train=True):
     transform = None
     if task == 'context_encoder':
-        if dataset == 'cifar10':
+        if dataset == 'cifar10' or dataset == 'cifar100':
             transform = transforms.Compose([
                 transforms.Resize(128),
                 transforms.ToTensor(),
@@ -26,7 +26,7 @@ def get_transform(dataset, task, train=True):
                 transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
             ])
     elif task == 'rotation':
-        if dataset == 'cifar10':
+        if dataset == 'cifar10' or dataset == 'cifar100':
             if train:
                 transform = transforms.Compose([
                     transforms.RandomCrop(32, padding=4),
@@ -72,7 +72,7 @@ def get_transform(dataset, task, train=True):
                 transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
             ])
     elif task == 'simclr':
-        if dataset == 'cifar10':
+        if dataset == 'cifar10' or dataset == 'cifar100':
             if train:
                 transform = transforms.Compose([
                     transforms.RandomResizedCrop(32),
@@ -153,6 +153,14 @@ def get_datasets(dataset, task):
         test_dset = datasets.CIFAR10(osp.join('data', dataset), train=False,
                                      transform=get_transform(dataset, task, train=False),
                                      download=True)
+        return train_dset, test_dset, len(train_dset.classes)
+    elif dataset == 'cifar100':
+        train_dset = datasets.CIFAR100(osp.join('data', dataset), train=True,
+                                       transform=get_transform(dataset, task, train=True),
+                                       download=True)
+        test_dset = datasets.CIFAR100(osp.join('data', dataset), train=False,
+                                      transform=get_transform(dataset, task, train=False),
+                                      download=True)
         return train_dset, test_dset, len(train_dset.classes)
     elif dataset == 'pascalvoc2012':
         train_dset = datasets.VOCSegmentation(osp.join('data', dataset), image_set='train',
