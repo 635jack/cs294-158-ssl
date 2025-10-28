@@ -62,7 +62,8 @@ def get_transform(dataset, task, train=True):
                 transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
                 transforms.RandomGrayscale(p=0.2),
                 transforms.ToTensor(),
-                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+                RandomChannelDrop(p=0.3)  # Supprime 2 canaux couleur avec proba 0.3
             ])
         else:
             transform = transforms.Compose([
@@ -260,3 +261,17 @@ class SegTargetTransform(object):
         target *= 255.
         target[target > 20] = 0
         return target.long()
+
+
+class RandomChannelDrop(object):
+    """Supprime aléatoirement 2 canaux couleur pour éviter l'exploitation de l'aberration chromatique"""
+    def __init__(self, p=0.5):
+        self.p = p
+    
+    def __call__(self, img):
+        if random.random() < self.p:
+            # Choisir un canal aléatoire à garder (0, 1, ou 2)
+            keep_channel = random.randint(0, 2)
+            # Mettre les 2 autres canaux à zéro
+            img[keep_channel] = 0
+        return img

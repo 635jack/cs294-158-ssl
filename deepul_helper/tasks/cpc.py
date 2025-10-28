@@ -12,8 +12,8 @@ from deepul_helper.batch_norm import BatchNorm1d
 
 class CPC(nn.Module):
     latent_dim = 2048
-    metrics = ['Loss']
-    metrics_fmt = [':.4e']
+    metrics = ['Loss', 'Acc1']  # Ajout de l'accuracy
+    metrics_fmt = [':.4e', ':6.2f']  # Format pour loss et accuracy
 
     def __init__(self, dataset, n_classes):
         super().__init__()
@@ -36,13 +36,16 @@ class CPC(nn.Module):
     def forward(self, images):
         batch_size = images.shape[0]
         patches = images_to_cpc_patches(images).detach() # (N*49, C, 64, 64)
+        
+        # Gap + jitter positionnel : masque les bords pour éviter les solutions triviales
+        # (continuité textures, alignement lignes, aberration chromatique)
         rnd = np.random.randint(low=0, high=16, size=(batch_size * 49,))
         for i in range(batch_size * 49):
-            r, c = rnd[i] // 4, rnd[i] % 4
-            patches[i, :, :r] = -1.
-            patches[i, :, :, :c] = -1.
-            patches[i, :, r + 60:] = -1.
-            patches[i, :, :, c + 60:] = -1.
+            r, c = rnd[i] // 4, rnd[i] % 4  # Décalage aléatoire 0-3 pixels
+            patches[i, :, :r] = -1.  # Masque bord haut
+            patches[i, :, :, :c] = -1.  # Masque bord gauche  
+            patches[i, :, r + 60:] = -1.  # Masque bord bas
+            patches[i, :, :, c + 60:] = -1.  # Masque bord droit
 
         latents = self.encoder(patches) # (N*49, latent_dim)
 
@@ -67,11 +70,16 @@ class CPC(nn.Module):
             b = np.arange(total_elements) // (col_dim_i * row_dim)
             col = np.arange(total_elements) % (col_dim_i * row_dim)
             labels = b * col_dim * row_dim + (i + 1) * row_dim + col
-            labels = torch.LongTensor(labels).to(logits.get_device())
+            labels = torch.LongTensor(labels).to(logits.device)
 
             loss = loss + F.cross_entropy(logits, labels)
 
-        return dict(Loss=loss), latents.mean(dim=[2, 3])
+        # Calcul de l'accuracy pour le monitoring
+        with torch.no_grad():
+            _, predicted = torch.max(logits, 1)
+            accuracy = (predicted == labels).float().mean()
+
+        return dict(Loss=loss, Acc1=accuracy), latents.mean(dim=[2, 3])
 
     def encode(self, images):
         batch_size = images.shape[0]
@@ -123,15 +131,3 @@ def images_to_cpc_patches(images):
     image_patches_tensor = torch.stack(all_image_patches, dim=1)
     return image_patches_tensor.view(-1, *image_patches_tensor.shape[-3:])
 
-# def extract_image_patches(x, kernel, stride=1, dilation=1):
-#     # Do TF 'SAME' Padding
-#     b,c,h,w = x.shape
-#     h2 = math.ceil(h / stride)
-#     w2 = math.ceil(w / stride)
-#     pad_row = (h2 - 1) * stride + (kernel - 1) * dilation + 1 - h
-#     pad_col = (w2 - 1) * stride + (kernel - 1) * dilation + 1 - w
-#     x = F.pad(x, (pad_row//2, pad_row - pad_row//2, pad_col//2, pad_col - pad_col//2))
-#     # Extract patches
-#     patches = x.unfold(2, kernel, stride).unfold(3, kernel, stride)
-#     patches = patches.permute(0,4,5,1,2,3).contiguous()
-#     return patches.view(b,-1,patches.shape[-2], patches.shape[-1])
