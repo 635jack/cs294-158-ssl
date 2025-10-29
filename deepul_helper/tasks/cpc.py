@@ -12,8 +12,8 @@ from deepul_helper.batch_norm import BatchNorm1d
 
 class CPC(nn.Module):
     latent_dim = 2048
-    metrics = ['Loss', 'Acc1']  # Ajout de l'accuracy
-    metrics_fmt = [':.4e', ':6.2f']  # Format pour loss et accuracy
+    metrics = ['Loss', 'Acc1']  # ajout de l'accuracy
+    metrics_fmt = [':.4e', ':6.2f'] # Format pour loss et accuracy
 
     def __init__(self, dataset, n_classes):
         super().__init__()
@@ -37,13 +37,13 @@ class CPC(nn.Module):
         batch_size = images.shape[0]
         patches = images_to_cpc_patches(images).detach() # (N*49, C, 64, 64)
         
-        # Gap + jitter positionnel : masque les bords pour éviter les solutions triviales
-        # (continuité textures, alignement lignes, aberration chromatique)
+        #Gap + jitter positionnel: masque les bords pour éviter les solutions triviales
+        # continuité textures, alignement lignes, aberration chromatique
         rnd = np.random.randint(low=0, high=16, size=(batch_size * 49,))
         for i in range(batch_size * 49):
-            r, c = rnd[i] // 4, rnd[i] % 4  # Décalage aléatoire 0-3 pixels
+            r, c = rnd[i] // 4, rnd[i] % 4 # Decalage aléatoire 0-3 pixels
             patches[i, :, :r] = -1.  # Masque bord haut
-            patches[i, :, :, :c] = -1.  # Masque bord gauche  
+            patches[i, :, :, :c] = -1.  #Masque bord gauche  
             patches[i, :, r + 60:] = -1.  # Masque bord bas
             patches[i, :, :, c + 60:] = -1.  # Masque bord droit
 
@@ -74,7 +74,7 @@ class CPC(nn.Module):
 
             loss = loss + F.cross_entropy(logits, labels)
 
-        # Calcul de l'accuracy pour le monitoring
+        #Calcul de l'accuracy pour le monitoring
         with torch.no_grad():
             _, predicted = torch.max(logits, 1)
             accuracy = (predicted == labels).float().mean()
