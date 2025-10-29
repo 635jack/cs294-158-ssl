@@ -33,6 +33,8 @@ def load_model_and_data(task, dataset='cifar10'):
         model = RotationPrediction(dataset, n_classes)
     elif task == 'simclr':
         model = SimCLR(dataset, n_classes, None)
+    elif task == 'cpc':
+        model = CPC(dataset, n_classes)
     model.load_state_dict(remove_module_state_dict(ckpt['state_dict']))
 
     model.cuda()
