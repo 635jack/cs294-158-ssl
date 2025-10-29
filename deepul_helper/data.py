@@ -55,23 +55,40 @@ def get_transform(dataset, task, train=True):
                     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
                 ])
     elif task == 'cpc':
-        if train:
-            transform = transforms.Compose([
-                transforms.RandomResizedCrop(256),
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
-                transforms.RandomGrayscale(p=0.2),
-                transforms.ToTensor(),
-                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-                RandomChannelDrop(p=0.3)  # Supprime 2 canaux couleur avec proba 0.3
-            ])
-        else:
-            transform = transforms.Compose([
-                transforms.Resize(256),
-                transforms.CenterCrop(256),
-                transforms.ToTensor(),
-                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-            ])
+        if dataset == 'cifar10' or dataset == 'cifar100':
+            if train:
+                transform = transforms.Compose([
+                    transforms.RandomResizedCrop(256),
+                    transforms.RandomHorizontalFlip(),
+                    transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
+                    transforms.RandomGrayscale(p=0.2),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))
+                ])
+            else:
+                transform = transforms.Compose([
+                    transforms.Resize(256),
+                    transforms.CenterCrop(256),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))
+                ])
+        elif 'imagenet' in dataset:
+            if train:
+                transform = transforms.Compose([
+                    transforms.RandomResizedCrop(256),
+                    transforms.RandomHorizontalFlip(),
+                    transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
+                    transforms.RandomGrayscale(p=0.2),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+                ])
+            else:
+                transform = transforms.Compose([
+                    transforms.Resize(256),
+                    transforms.CenterCrop(256),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+                ])
     elif task == 'simclr':
         if dataset == 'cifar10' or dataset == 'cifar100':
             if train:
