@@ -63,6 +63,8 @@ def get_transform(dataset, task, train=True):
                     transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
                     transforms.RandomGrayscale(p=0.2),
                     transforms.ToTensor(),
+                    # random channel drop pour mitiger l'aberration chromatique: on garde 1 canal rgb aleatoire
+                    RandomChannelDrop(p=0.3),
                     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))
                 ])
             else:
@@ -80,6 +82,8 @@ def get_transform(dataset, task, train=True):
                     transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
                     transforms.RandomGrayscale(p=0.2),
                     transforms.ToTensor(),
+                    # random channel drop pour mitiger l'aberration chromatique
+                    RandomChannelDrop(p=0.3),
                     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
                 ])
             else:
@@ -281,14 +285,16 @@ class SegTargetTransform(object):
 
 
 class RandomChannelDrop(object):
-    """Supprime aléatoirement 2 canaux couleur pour éviter l'exploitation de l'aberration chromatique"""
+    """supprime aleatoirement 2 canaux couleur pour eviter l'exploitation de l'aberration chromatique 🎯"""
     def __init__(self, p=0.5):
         self.p = p
     
     def __call__(self, img):
         if random.random() < self.p:
-            # Choisir un canal aléatoire à garder (0, 1, ou 2)
+            # choisir un canal aleatoire a garder (0, 1, ou 2)
             keep_channel = random.randint(0, 2)
-            # Mettre les 2 autres canaux à zéro
-            img[keep_channel] = 0
+            # mettre a zero les 2 autres canaux pour casser les raccourcis lies a l'aberration chromatique
+            for ch in (0, 1, 2):
+                if ch != keep_channel:
+                    img[ch] = 0
         return img
